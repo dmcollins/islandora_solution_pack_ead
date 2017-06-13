@@ -64,6 +64,7 @@ function islandora_ead_association_modify_form(array $form, array &$form_state, 
     '#value' => $refid,
   );
 
+    /**
   $form['models'] = array(
     '#type' => 'select',
     '#title' => t('Select a Content Model to Ingest (EAD)'),
@@ -94,7 +95,7 @@ function islandora_ead_association_modify_form(array $form, array &$form_state, 
     '#type' => 'container',
     '#attributes' => array('id' => 'upload-div'),
     'file_upload' => $file_upload,
-  );
+  );**/
 
   $form['submit'] = array(
     '#type' => 'submit',

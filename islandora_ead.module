@@ -58,7 +58,7 @@ function islandora_ead_menu() {
 
   $items['islandora/object/%islandora_object/manage/ead/%/modify'] = array(
     'type' => MENU_CALLBACK,
-    'title' => 'Create Association',
+    'title' => 'Modify Association',
     'file' => 'includes/association_modify.form.inc',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('islandora_ead_association_modify_form', 2, 5),
