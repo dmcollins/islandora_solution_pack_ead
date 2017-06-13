@@ -38,21 +38,7 @@
  *   The drupal form definition.
  */
 function islandora_ead_association_modify_form(array $form, array &$form_state, AbstractObject $ead, $refid) {
-  $options = array();
-  $model_info = array(
-    'islandora:sp_pdf' => array('pdf'),
-    'islandora:sp_large_image_cmodel' => array('tiff tif'),
-    'islandora:sp_basic_image' => array('gif png jpg jpeg'),
-  );
-  $current_model = !empty($form_state['values']['models']) ? $form_state['values']['models'] : key($model_info);
-  $extensions = $model_info[$current_model];
 
-  foreach (array_keys($model_info) as $model) {
-    $object = islandora_object_load($model);
-    $options[$model] = $object->label;
-  }
-
-  $upload_size = min((int) ini_get('post_max_size'), (int) ini_get('upload_max_filesize'));
 
   $form['eadid'] = array(
     '#type' => 'hidden',
@@ -64,53 +50,82 @@ function islandora_ead_association_modify_form(array $form, array &$form_state, 
     '#value' => $refid,
   );
 
-    /**
-  $form['models'] = array(
-    '#type' => 'select',
-    '#title' => t('Select a Content Model to Ingest (EAD)'),
-    '#options' => $options,
-    '#ajax' => array(
-      'callback' => 'islandora_ead_association_modify_form_ajax',
-      'wrapper' => 'upload-div',
-      'method' => 'replaceWith',
-      'effect' => 'fade',
-    ),
-  );
-
-  $file_upload = array(
-    '#type' => 'managed_file',
-    '#title' => t('File'),
-    '#required' => TRUE,
-    '#default_value' => isset($form_state['values']['file_upload']) ? $form_state['values']['file_upload'] : NULL,
-    '#description' => filter_xss(t('Select file to upload.<br/>Files must be less than <b>!size MB.</b><br/>Allowed file types: <b>!ext.</b>',
-                                   array('!size' => $upload_size, '!ext' => $extensions[0])), array('br', 'b')),
-    '#upload_location' => 'temporary://',
-    '#upload_validators' => array(
-      'file_validate_extensions' => $extensions,
-      'file_validate_size' => array($upload_size * 1024 * 1024),
-    ),
-  );
-
-  $form['upload_wrapper'] = array(
-    '#type' => 'container',
-    '#attributes' => array('id' => 'upload-div'),
-    'file_upload' => $file_upload,
-  );**/
-
   $form['submit'] = array(
     '#type' => 'submit',
     '#default_value' => 'Ingest',
   );
 
+  $xsl = new DOMDocument();
+  $xsl->load(drupal_get_path('module', 'islandora_ead') . '/xml/getEadLevels.xsl');
+
+  $xslt = new XSLTProcessor();
+  $xslt->importStyleSheet($xsl);
+
+  module_load_include('inc', 'islandora_ead', 'includes/utilities');
+  $associations = islandora_ead_retrieve_associations($ead->id);
+
+  $ead_dom = new DOMDocument();
+  $ead_dom->loadXML($ead['EAD']->content);
+  $ead_dom = $xslt->transformToDoc($ead_dom);
+
+  $partsxml = new SimpleXMLElement($ead_dom->saveXML());
+
+  $parts = array();
+  $entity = $partsxml->entity;
+
+    $info = $entity->title;
+    if (trim($entity->extent) !== '') {
+      $info .= "<br/>$entity->extent";
+    }
+    if (trim($entity->desc) !== '') {
+      $info .= "<br/>$entity->desc";
+    }
+
+    $containers = array();
+    foreach ($entity->container as $container) {
+      if (trim($container->type) !== '') {
+        $containers[] = "$container->type: $container->value";
+      }
+    }
+
+    if ($containers) {
+      $info .= "<br/>" . implode(", ", $containers);
+    }
+
+    $entity_id = (string) $entity->id;
+
+    if (array_key_exists($entity_id, $associations)) {
+      $association = $associations[$entity_id];
+      $assoc_link = "<a href='/islandora/object/$association'>$association</a> (<a href='/islandora/object/$ead->id/manage/ead/$entity->id/modify'>Remove Association</a>)";
+    }
+    else {
+      $assoc_link = "<a href='/islandora/object/$ead->id/manage/ead/$entity->id'>Ingest New Associated Object</a> | <a href='/islandora/object/$ead->id/manage/ead/$entity->id/modify'>Associate Existing Object</a>";
+    }
+
+    $parts = array(
+      'level' => $entity->level,
+      'info' => $info,
+      'association' => $assoc_link,
+    );
+
+
+  $form['table'] = array(
+    '#theme' => 'table',
+    '#header' => $header,
+    '#rows' => $parts,
+    '#empty' => 'Empty Finding Aid',
+  );
+
   return $form;
+
 }
 
 /**
  * AJAX callback for EAD association form.
  */
-function islandora_ead_association_modify_form_ajax(array $form, array &$form_state) {
+/*function islandora_ead_association_modify_form_ajax(array $form, array &$form_state) {
   return $form['upload_wrapper'];
-}
+}*/
 
 /**
  * Submit handler, adds uploaded file to ingest object.
