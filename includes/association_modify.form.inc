@@ -41,18 +41,19 @@ function islandora_ead_association_modify_form(array $form, array &$form_state, 
 
 
   $form['eadid'] = array(
-    '#type' => 'hidden',
+    '#type' => 'submit',
     '#value' => $ead->id,
   );
 
   $form['refid'] = array(
-    '#type' => 'hidden',
+    '#type' => 'submit',
     '#value' => $refid,
   );
 
-  $form['submit'] = array(
-    '#type' => 'submit',
-    '#default_value' => 'Ingest',
+  $header = array(
+    'level' => t('Level'),
+    'info' => t('Info'),
+    'association' => t('Association'),
   );
 
   $xsl = new DOMDocument();
@@ -64,16 +65,24 @@ function islandora_ead_association_modify_form(array $form, array &$form_state, 
   module_load_include('inc', 'islandora_ead', 'includes/utilities');
   $associations = islandora_ead_retrieve_associations($ead->id);
 
+  $form['associate'] = array(
+     '#type' => 'submit',
+     '#value' => $associations,
+  );
+
   $ead_dom = new DOMDocument();
   $ead_dom->loadXML($ead['EAD']->content);
   $ead_dom = $xslt->transformToDoc($ead_dom);
 
   $partsxml = new SimpleXMLElement($ead_dom->saveXML());
 
+  $parts_idx = 1;
   $parts = array();
-  $entity = $partsxml->entity;
-
+  
+  foreach ($partsxml->entity as $entity) {
     $info = $entity->title;
+if ($entity->id == $refid) {
+
     if (trim($entity->extent) !== '') {
       $info .= "<br/>$entity->extent";
     }
@@ -96,27 +105,34 @@ function islandora_ead_association_modify_form(array $form, array &$form_state, 
 
     if (array_key_exists($entity_id, $associations)) {
       $association = $associations[$entity_id];
-      $assoc_link = "<a href='/islandora/object/$association'>$association</a> (<a href='/islandora/object/$ead->id/manage/ead/$entity->id/modify'>Remove Association</a>)";
+      $assoc_link = "<a href='/islandora/object/$association'>$association</a>";
     }
     else {
-      $assoc_link = "<a href='/islandora/object/$ead->id/manage/ead/$entity->id'>Ingest New Associated Object</a> | <a href='/islandora/object/$ead->id/manage/ead/$entity->id/modify'>Associate Existing Object</a>";
+      $assoc_link = "No Associations";
     }
 
-    $parts = array(
+    $parts[$parts_idx++] = array(
       'level' => $entity->level,
       'info' => $info,
       'association' => $assoc_link,
     );
 
-
   $form['table'] = array(
     '#theme' => 'table',
     '#header' => $header,
     '#rows' => $parts,
-    '#empty' => 'Empty Finding Aid',
+    '#empty' => 'No Associations',
   );
 
-  return $form;
+$form['mod_assoc'] = array(
+  '#type' => 'textfield',
+  '#title' => t('Associated Object'),
+  '#default_value' => $association,
+);
+
+return $form;
+}
+}
 
 }
 
