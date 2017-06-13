@@ -48,10 +48,20 @@ function islandora_ead_menu() {
 
   $items['islandora/object/%islandora_object/manage/ead/%'] = array(
     'type' => MENU_CALLBACK,
-    'title' => 'Modify Association',
+    'title' => 'Create Association',
     'file' => 'includes/association_upload.form.inc',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('islandora_ead_association_upload_form', 2, 5),
+    'access callback' => 'islandora_ead_manage_access_callback',
+    'access arguments' => array(2),
+  );
+
+  $items['islandora/object/%islandora_object/manage/ead/%/modify'] = array(
+    'type' => MENU_CALLBACK,
+    'title' => 'Create Association',
+    'file' => 'includes/association_modify.form.inc',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('islandora_ead_association_modify_form', 2, 5),
     'access callback' => 'islandora_ead_manage_access_callback',
     'access arguments' => array(2),
   );
