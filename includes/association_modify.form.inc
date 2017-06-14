@@ -2,10 +2,11 @@
 
 /**
  * @file
- * Handles the display/submission for uploading associated objects for an EAD.
+ * Handles the associating of existing objects for an EAD.
  *
  * This file is part of the Islandora EAD Solution Pack.
- * Copyright (C) 2015  Drexel University.
+ * This file was developed by Bata Library, Trent University and is a modified
+ * version of association_upload.form.inc from Drexel University.
  *
  * The Islandora EAD Solution Pack is free software; you can redistribute
  * it and/or modify it under the terms of the GNU General Public License as
@@ -37,16 +38,16 @@
  * @return array
  *   The drupal form definition.
  */
+
 function islandora_ead_association_modify_form(array $form, array &$form_state, AbstractObject $ead, $refid) {
 
-
   $form['eadid'] = array(
-    '#type' => 'submit',
+    '#type' => 'hidden',
     '#value' => $ead->id,
   );
 
   $form['refid'] = array(
-    '#type' => 'submit',
+    '#type' => 'hidden',
     '#value' => $refid,
   );
 
@@ -66,8 +67,8 @@ function islandora_ead_association_modify_form(array $form, array &$form_state, 
   $associations = islandora_ead_retrieve_associations($ead->id);
 
   $form['associate'] = array(
-     '#type' => 'submit',
-     '#value' => $associations,
+    '#type' => 'submit',
+    '#value' => $associations,
   );
 
   $ead_dom = new DOMDocument();
@@ -81,154 +82,98 @@ function islandora_ead_association_modify_form(array $form, array &$form_state, 
   
   foreach ($partsxml->entity as $entity) {
     $info = $entity->title;
-if ($entity->id == $refid) {
+    if ($entity->id == $refid) {
 
-    if (trim($entity->extent) !== '') {
-      $info .= "<br/>$entity->extent";
-    }
-    if (trim($entity->desc) !== '') {
-      $info .= "<br/>$entity->desc";
-    }
-
-    $containers = array();
-    foreach ($entity->container as $container) {
-      if (trim($container->type) !== '') {
-        $containers[] = "$container->type: $container->value";
+      if (trim($entity->extent) !== '') {
+        $info .= "<br/>$entity->extent";
       }
-    }
 
-    if ($containers) {
-      $info .= "<br/>" . implode(", ", $containers);
-    }
+      if (trim($entity->desc) !== '') {
+        $info .= "<br/>$entity->desc";
+      }
 
-    $entity_id = (string) $entity->id;
-    $association = '';
+      $containers = array();
 
-    if (array_key_exists($entity_id, $associations)) {
-      $association = $associations[$entity_id];
-      $assoc_link = "<a href='/islandora/object/$association'>$association</a>";
-    }
-    else {
-      $assoc_link = "No Associations";
-    }
+      foreach ($entity->container as $container) {
+        if (trim($container->type) !== '') {
+          $containers[] = "$container->type: $container->value";
+        }
+      }
 
-    $parts[$parts_idx++] = array(
-      'level' => $entity->level,
-      'info' => $info,
-      'association' => $assoc_link,
-    );
+      if ($containers) {
+        $info .= "<br/>" . implode(", ", $containers);
+      }
 
-  $form['table'] = array(
-    '#theme' => 'table',
-    '#header' => $header,
-    '#rows' => $parts,
-    '#empty' => 'No Associations',
-  );
+      $entity_id = (string) $entity->id;
+      $association = '';
 
-$form['mod_assoc'] = array(
-  '#type' => 'textfield',
-  '#title' => t('Associated Object'),
-  '#default_value' => $association,
-  '#autocomplete_path' => 'islandora_ead_object/autocomplete/object',
-);
+      if (array_key_exists($entity_id, $associations)) {
+        $association = $associations[$entity_id];
+        $assoc_link = "<a href='/islandora/object/$association'>$association</a>";
+      }
+      else {
+        $assoc_link = "No Associations";
+      }
+
+      $parts[$parts_idx++] = array(
+        'level' => $entity->level,
+        'info' => $info,
+        'association' => $assoc_link,
+      );
+
+      $form['table'] = array(
+        '#theme' => 'table',
+        '#header' => $header,
+        '#rows' => $parts,
+        '#empty' => 'No Associations',
+      );
+
+      $form['mod_assoc'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Associated Object'),
+        '#default_value' => $association,
+        '#autocomplete_path' => 'islandora_ead_object/autocomplete/object',
+      );
 
       $form['exist_assoc'] = array(
-    '#type' => 'submit',
-    '#value' => $association,
-  );
-    
-  $form['submit'] = array(
-    '#type' => 'submit',
-    '#default_value' => 'Modify',
-  );    
-    
-return $form;
-}
-}
+        '#type' => 'hidden',
+        '#value' => $association,
+      );
 
-}
+      $form['submit'] = array(
+        '#type' => 'submit',
+        '#default_value' => 'Modify',
+      );    
 
-/**
- * AJAX callback for EAD association form.
- */
-/*function islandora_ead_association_modify_form_ajax(array $form, array &$form_state) {
-  return $form['upload_wrapper'];
-}*/
+      return $form;
+    }
+  }
+}
 
 /**
- * Submit handler, adds uploaded file to ingest object.
+ * Submit handler, modifies relationships of object.
  */
 function islandora_ead_association_modify_form_submit(array $form, array &$form_state) {
-
   $tuque = islandora_get_tuque_connection();
-
-  /*$model = $form_state['values']['models'];*/
   $eadid = $form_state['values']['eadid'];
   $refid = $form_state['values']['refid'];
   $associd_new = $form_state['values']['mod_assoc'];
   $associd = $form_state['values']['exist_assoc'];
 
-  // Create new object to add to repo; Assign content model and relationships.
-if ($associd_new !== $associd) {
+  // Modify/create relationships.
+  if ($associd_new !== $associd) {
     if ($associd_new !== '') {
-  $object = $tuque->repository->getObject($associd_new);
-  /*$object->models = $model;*/
-  $object->relationships->add(FEDORA_RELS_EXT_URI, 'isPartOf', $eadid);
-  $object->relationships->add(FEDORA_RELS_EXT_URI, 'eadLevelId', $refid);
-}
-    if ($associd !== '' || $associd_new == '') {
-          $object = $tuque->repository->getObject($associd);
-  $object->relationships->remove(FEDORA_RELS_EXT_URI, 'isPartOf', $eadid);
-  $object->relationships->remove(FEDORA_RELS_EXT_URI, 'eadLevelId', $refid);
+      $object = $tuque->repository->getObject($associd_new);
+      $object->relationships->add(FEDORA_RELS_EXT_URI, 'isPartOf', $eadid);
+      $object->relationships->add(FEDORA_RELS_EXT_URI, 'eadLevelId', $refid);
     }
-}
-  // Retrieve uploaded file contents and create OBJ datastream.
- /* $ds = $object->constructDatastream('OBJ', 'M');
-  $file = file_load($form_state['values']['file_upload']);
-  $path = drupal_realpath($file->uri);
-  $ds->setContentFromFile($path, FALSE);
-  $ds->label = $file->filename;
-  $ds->mimetype = $file->filemime;
-  $object->ingestDatastream($ds); */
+    if ($associd !== '' || $associd_new == '') {
+      $object = $tuque->repository->getObject($associd);
+      $object->relationships->remove(FEDORA_RELS_EXT_URI, 'isPartOf', $eadid);
+      $object->relationships->remove(FEDORA_RELS_EXT_URI, 'eadLevelId', $refid);
+    }
+  }
 
-  // Create DC datastream and populate with metadata from parent EAD.
- /* $ds = $object->constructDatastream('DC', 'X');
-  $ds->label = "Dublin Core Record for this object";
-  $ds->setContentFromString(islandora_ead_generate_dc($object->id, $eadid, $refid));
-  $object->ingestDatastream($ds); */
-
-  // Actually add the object to the repository.
- /* islandora_add_object($object); */
-
-  // Redirect browser to the newly added object.
+  // Redirect browser to the EAD management of object.
   $form_state['redirect'] = "islandora/object/{$eadid}/manage/ead";
 }
-
-/**
- * Creates DC XML based on a specific subset of EAD metadata.
- *
- * @param string $objid
- *   The PID of the object the metadata applies to.
- * @param string $eadid
- *   The PID of the parent EAD object.
- * @param string $refid
- *   The id of the section in the EAD to retrieve metadata from.
- */
-/*function islandora_ead_generate_dc($objid, $eadid, $refid) {
-  $ead = islandora_object_load($eadid);
-  $eadxml = new SimpleXMLElement($ead['EAD']->content);
-  $level = $eadxml->archdesc->dsc->xpath("//*[@id='$refid']");
-
-  // refid's are unique, should only be one result.
-  $level = $level[0];
-  $title = (string) $level->did->unittitle;
-
-  $dcxml = <<<XML
-<oai_dc:dc xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:oai_dc="http://www.openarchives.org/OAI/2.0/oai_dc/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.openarchives.org/OAI/2.0/oai_dc/ http://www.openarchives.org/OAI/2.0/oai_dc.xsd">
-  <dc:title>$title</dc:title>
-  <dc:identifier>$objid</dc:identifier>
-</oai_dc:dc>
-XML;
-
-  return $dcxml;
-}*/

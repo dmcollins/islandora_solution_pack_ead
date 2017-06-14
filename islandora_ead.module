@@ -69,7 +69,6 @@ function islandora_ead_menu() {
   $items['islandora_ead_object/autocomplete/object'] = array(
     'page callback' => 'islandora_ead_object_autocomplete',
     'page arguments' => array(3),
-    'access arguments' => array('administer relationships'),  
     'type' => MENU_CALLBACK,
   );
 
@@ -174,7 +173,6 @@ function islandora_ead_islandora_solr_object_result_alter(&$search_result, $quer
 function islandora_ead_object_autocomplete($string) {
   $matches = array();
   $islandora_tuque = islandora_get_tuque_connection();
-  /*$compound_enforcement = variable_get('islandora_compound_object_compound_children', TRUE);*/
 
   // Build escapes as per:
   // - https://www.w3.org/TR/xmlschema-2/#dt-metac and
@@ -201,13 +199,9 @@ function islandora_ead_object_autocomplete($string) {
   $meta_replacements = drupal_map_assoc($meta, $escape_meta);
 
   $replacements = array(
-/*    '!compound_model' => '?model',*/
     '!text' => str_replace(array_keys($meta_replacements), $meta_replacements, $string),
   );
-  /*if ($compound_enforcement && $parent) {
-    $compound_model = ISLANDORA_COMPOUND_OBJECT_CMODEL;
-    $replacements['!compound_model'] = "<info:fedora/$compound_model>";
-  }*/
+
 
   $query = <<<'EOQ'
 SELECT DISTINCT ?pid ?title
