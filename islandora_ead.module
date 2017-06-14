@@ -69,7 +69,7 @@ function islandora_ead_menu() {
   $items['islandora_ead_object/autocomplete/object'] = array(
     'page callback' => 'islandora_ead_object_autocomplete',
     'page arguments' => array(3),
-    'access arguments' => array('administer compound relationships'),
+    'access arguments' => array('administer relationships'),  
     'type' => MENU_CALLBACK,
   );
 
@@ -171,7 +171,7 @@ function islandora_ead_islandora_solr_object_result_alter(&$search_result, $quer
  * @param string $string
  *   The user supplied string that is being searched for.
  */
-function islandora_compound_ead_autocomplete($string) {
+function islandora_ead_object_autocomplete($string) {
   $matches = array();
   $islandora_tuque = islandora_get_tuque_connection();
   /*$compound_enforcement = variable_get('islandora_compound_object_compound_children', TRUE);*/
@@ -201,7 +201,7 @@ function islandora_compound_ead_autocomplete($string) {
   $meta_replacements = drupal_map_assoc($meta, $escape_meta);
 
   $replacements = array(
-    '!compound_model' => '?model',
+/*    '!compound_model' => '?model',*/
     '!text' => str_replace(array_keys($meta_replacements), $meta_replacements, $string),
   );
   /*if ($compound_enforcement && $parent) {

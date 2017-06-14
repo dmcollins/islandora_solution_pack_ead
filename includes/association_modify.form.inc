@@ -102,6 +102,7 @@ if ($entity->id == $refid) {
     }
 
     $entity_id = (string) $entity->id;
+    $association = '';
 
     if (array_key_exists($entity_id, $associations)) {
       $association = $associations[$entity_id];
