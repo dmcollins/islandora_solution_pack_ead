@@ -132,6 +132,16 @@ $form['mod_assoc'] = array(
   '#autocomplete_path' => 'islandora_ead_object/autocomplete/object',
 );
 
+      $form['exist_assoc'] = array(
+    '#type' => 'submit',
+    '#value' => $association,
+  );
+    
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#default_value' => 'Modify',
+  );    
+    
 return $form;
 }
 }
@@ -152,36 +162,46 @@ function islandora_ead_association_modify_form_submit(array $form, array &$form_
 
   $tuque = islandora_get_tuque_connection();
 
-  $model = $form_state['values']['models'];
+  /*$model = $form_state['values']['models'];*/
   $eadid = $form_state['values']['eadid'];
   $refid = $form_state['values']['refid'];
+  $associd_new = $form_state['values']['mod_assoc'];
+  $associd = $form_state['values']['exist_assoc'];
 
   // Create new object to add to repo; Assign content model and relationships.
-  $object = $tuque->repository->constructObject(islandora_get_namespace($eadid));
-  $object->models = $model;
+if ($associd_new !== $associd) {
+    if ($associd_new !== '') {
+  $object = $tuque->repository->getObject($associd_new);
+  /*$object->models = $model;*/
   $object->relationships->add(FEDORA_RELS_EXT_URI, 'isPartOf', $eadid);
   $object->relationships->add(FEDORA_RELS_EXT_URI, 'eadLevelId', $refid);
-
+}
+    if ($associd !== '' || $associd_new == '') {
+          $object = $tuque->repository->getObject($associd);
+  $object->relationships->remove(FEDORA_RELS_EXT_URI, 'isPartOf', $eadid);
+  $object->relationships->remove(FEDORA_RELS_EXT_URI, 'eadLevelId', $refid);
+    }
+}
   // Retrieve uploaded file contents and create OBJ datastream.
-  $ds = $object->constructDatastream('OBJ', 'M');
+ /* $ds = $object->constructDatastream('OBJ', 'M');
   $file = file_load($form_state['values']['file_upload']);
   $path = drupal_realpath($file->uri);
   $ds->setContentFromFile($path, FALSE);
   $ds->label = $file->filename;
   $ds->mimetype = $file->filemime;
-  $object->ingestDatastream($ds);
+  $object->ingestDatastream($ds); */
 
   // Create DC datastream and populate with metadata from parent EAD.
-  $ds = $object->constructDatastream('DC', 'X');
+ /* $ds = $object->constructDatastream('DC', 'X');
   $ds->label = "Dublin Core Record for this object";
   $ds->setContentFromString(islandora_ead_generate_dc($object->id, $eadid, $refid));
-  $object->ingestDatastream($ds);
+  $object->ingestDatastream($ds); */
 
   // Actually add the object to the repository.
-  islandora_add_object($object);
+ /* islandora_add_object($object); */
 
   // Redirect browser to the newly added object.
-  $form_state['redirect'] = "islandora/object/{$object->id}";
+  $form_state['redirect'] = "islandora/object/{$eadid}/manage/ead";
 }
 
 /**
@@ -194,7 +214,7 @@ function islandora_ead_association_modify_form_submit(array $form, array &$form_
  * @param string $refid
  *   The id of the section in the EAD to retrieve metadata from.
  */
-function islandora_ead_generate_dc($objid, $eadid, $refid) {
+/*function islandora_ead_generate_dc($objid, $eadid, $refid) {
   $ead = islandora_object_load($eadid);
   $eadxml = new SimpleXMLElement($ead['EAD']->content);
   $level = $eadxml->archdesc->dsc->xpath("//*[@id='$refid']");
@@ -211,4 +231,4 @@ function islandora_ead_generate_dc($objid, $eadid, $refid) {
 XML;
 
   return $dcxml;
-}
+}*/
