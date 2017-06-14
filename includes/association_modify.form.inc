@@ -128,6 +128,7 @@ $form['mod_assoc'] = array(
   '#type' => 'textfield',
   '#title' => t('Associated Object'),
   '#default_value' => $association,
+  '#autocomplete_path' => 'islandora_ead_object/autocomplete/object',
 );
 
 return $form;
