@@ -69,6 +69,7 @@ function islandora_ead_menu() {
   $items['islandora_ead_object/autocomplete/object'] = array(
     'page callback' => 'islandora_ead_object_autocomplete',
     'page arguments' => array(3),
+    'access arguments' => array('edit fedora metadata'),
     'type' => MENU_CALLBACK,
   );
 
