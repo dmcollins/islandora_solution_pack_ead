@@ -154,7 +154,6 @@ function islandora_ead_association_modify_form(array $form, array &$form_state, 
  * Submit handler, modifies relationships of object.
  */
 function islandora_ead_association_modify_form_submit(array $form, array &$form_state) {
-  $tuque = islandora_get_tuque_connection();
   $eadid = $form_state['values']['eadid'];
   $refid = $form_state['values']['refid'];
   $associd_new = $form_state['values']['mod_assoc'];
@@ -163,12 +162,16 @@ function islandora_ead_association_modify_form_submit(array $form, array &$form_
   // Modify/create relationships.
   if ($associd_new !== $associd) {
     if ($associd_new !== '') {
-      $object = $tuque->repository->getObject($associd_new);
+      $object = islandora_object_load($associd_new);
+      if (!$object) {
+         drupal_set_message(t('Error - Object does not exist'), 'error');
+      } else {
       $object->relationships->add(FEDORA_RELS_EXT_URI, 'isPartOf', $eadid);
       $object->relationships->add(FEDORA_RELS_EXT_URI, 'eadLevelId', $refid);
     }
+    }
     if ($associd !== '' || $associd_new == '') {
-      $object = $tuque->repository->getObject($associd);
+      $object = islandora_object_load($associd);
       $object->relationships->remove(FEDORA_RELS_EXT_URI, 'isPartOf', $eadid);
       $object->relationships->remove(FEDORA_RELS_EXT_URI, 'eadLevelId', $refid);
     }
