@@ -32,7 +32,7 @@ function islandora_ead_upload_form(array $form, array &$form_state) {
     'file' => array(
       '#title' => t('EAD'),
       '#type' => 'managed_file',
-      '#required' => TRUE,
+      '#required' => FALSE,
       '#description' => t('Select file to upload.<br/>Files must be less than <b>@size MB.</b><br/>Allowed file types: <b>@ext.</b>', array('@size' => $upload_size, '@ext' => $extensions[0])),
       '#default_value' => isset($form_state['values']['files']) ? $form_state['values']['files'] : NULL,
       '#upload_location' => 'temporary://',
@@ -46,29 +46,31 @@ function islandora_ead_upload_form(array $form, array &$form_state) {
 
 /**
  * Submit handler, adds uploaded file to ingest object.
- */
+*/
 function islandora_ead_upload_form_submit(array $form, array &$form_state) {
-  $object = $form_state['islandora']['objects'][0];
-  if (empty($object['EAD'])) {
-    $ds = $object->constructDatastream('EAD', 'M');
-    $object->ingestDatastream($ds);
-  }
-  else {
-    $ds = $object['EAD'];
-  }
-
   $file = file_load($form_state['values']['file']);
-  $path = drupal_realpath($file->uri);
-  $ds->setContentFromFile($path, FALSE);
-  $ds->label = $file->filename;
-  $ds->mimetype = $file->filemime;
+  if ($file) {
+    $object = $form_state['islandora']['objects'][0];
+    if (empty($object['EAD'])) {
+      $ds = $object->constructDatastream('EAD', 'M');
+      $object->ingestDatastream($ds);
+    }
+    else {
+      $ds = $object['EAD'];
+    }
 
-  $eadxml = simplexml_load_file($path);
-  if (isset($eadxml->archdesc->did->unittitle)) {
-    $unittitle = $eadxml->archdesc->did->unittitle;
-    $unitid = isset($eadxml->archdesc->did->unitid) ? $eadxml->archdesc->did->unitid . " " : "";
-    $unitdate = isset($eadxml->archdesc->did->unitdate) ? ", " . $eadxml->archdesc->did->unitdate : "";
+    $path = drupal_realpath($file->uri);
+    $ds->setContentFromFile($path, FALSE);
+    $ds->label = $file->filename;
+    $ds->mimetype = $file->filemime;
 
-    $object->label = "$unitid$unittitle$unitdate";
+    $eadxml = simplexml_load_file($path);
+    if (isset($eadxml->archdesc->did->unittitle)) {
+      $unittitle = $eadxml->archdesc->did->unittitle;
+      $unitid = isset($eadxml->archdesc->did->unitid) ? $eadxml->archdesc->did->unitid . " " : "";
+      $unitdate = isset($eadxml->archdesc->did->unitdate) ? ", " . $eadxml->archdesc->did->unitdate : "";
+
+      $object->label = "$unitid$unittitle$unitdate";
+    }
   }
 }

@@ -117,6 +117,46 @@ function islandora_ead_islandora_required_objects(IslandoraTuque $connection) {
 }
 
 /**
+ * Implements hook_xml_form_builder_forms().
+ */
+function islandora_ead_xml_form_builder_forms() {
+  $module_path = drupal_get_path('module', 'islandora_ead');
+  return array(
+    'EAD Core Form' => array(
+      'form_file' => "$module_path/xml/islandora_ead_core_form.xml",
+    ),
+    'EAD Collection Inventory Form' => array(
+      'form_file' => "$module_path/xml/islandora_ead_inventory_form.xml",
+    ),
+  );
+}
+
+/**
+ * Implements hook_xml_form_builder_form_associations().
+ */
+function islandora_ead_xml_form_builder_form_associations() {
+  return array(
+    'islandora_ead_core_form' => array(
+      'content_model' => 'islandora:eadCModel',
+      'form_name' => 'EAD Core Form',
+      'dsid' => 'EAD',
+      'title_field' => array('eadheader', 'filedesc', 'titlestmt', 'titleproper'),
+      'transform' => 'No Transform',
+      'self_transform' => 'cleanup_mods.xsl',
+      'template' => FALSE,
+    ),
+    'islandora_ead_inventory_form' => array(
+       'content_model' => 'islandora:eadCModel',
+       'form_name' => 'EAD Collection Inventory Form',
+       'dsid' => 'EAD',
+       'transform' => 'No Transform',
+       'self_transform' => 'cleanup_mods.xsl',
+       'template' => FALSE,
+     ),
+  );
+}
+
+/**
  * Implements hook_islandora_ingest_steps().
  */
 function islandora_ead_islandora_eadcmodel_islandora_ingest_steps() {

@@ -33,7 +33,7 @@
     </entities>
   </xsl:template>
 
-  <xsl:template match="ead:dsc//*[substring(name(), 1, 2) = 'c0' or substring(name(), 1, 2) = 'c1' or name() = 'c']">
+  <xsl:template match="ead:dsc//*[substring(name(), 1, 2) = 'c0' or substring(name(), 1, 6) = 'ead:c0' or substring(name(), 1, 2) = 'c1' or name() = 'c']">
     <entity>
       <id>
         <xsl:value-of select="@id"/>
@@ -52,7 +52,7 @@
       </extent>
       <xsl:apply-templates select="./ead:did/ead:container"/>
     </entity>
-    <xsl:apply-templates select="./*[substring(name(), 1, 2) = 'c0' or substring(name(), 1, 2) = 'c1' or name() = 'c']"/>
+    <xsl:apply-templates select="./*[substring(name(), 1, 2) = 'c0' or substring(name(), 1, 6) = 'ead:c0' or substring(name(), 1, 2) = 'c1' or name() = 'c']"/>
   </xsl:template>
 
   <xsl:template match="ead:container">
