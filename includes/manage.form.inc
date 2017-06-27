@@ -80,14 +80,18 @@ function islandora_ead_manage_form(array $form, array &$form_state, AbstractObje
 
     $entity_id = (string) $entity->id;
 
-    if (array_key_exists($entity_id, $associations)) {
-      $association = $associations[$entity_id];
-      $assoc_link = "<a href='/islandora/object/$association'>$association</a></td><td><a href='/islandora/object/$object->id/manage/ead/$entity->id/modify'>Modify Association</a>";
-    }
+    if (empty($entity_id)) {
+      $assoc_link = "No ID assigned to EAD Level.";
+    } 
     else {
-      $assoc_link = "<a href='/islandora/object/$object->id/manage/ead/$entity->id'>Ingest New Associated Object</a></td><td><a href='/islandora/object/$object->id/manage/ead/$entity->id/modify'>Associate Existing Object</a>";
+      if (array_key_exists($entity_id, $associations)) {
+        $association = $associations[$entity_id];
+        $assoc_link = "<a href='/islandora/object/$association'>$association</a></td><td><a href='/islandora/object/$object->id/manage/ead/$entity->id/modify'>Modify Association</a>";
+      }
+      else {
+        $assoc_link = "<a href='/islandora/object/$object->id/manage/ead/$entity->id'>Ingest New Associated Object</a></td><td><a href='/islandora/object/$object->id/manage/ead/$entity->id/modify'>Associate Existing Object</a>";
+      }
     }
-
     $parts[$parts_idx++] = array(
       'level' => $entity->level,
       'info' => $info,
